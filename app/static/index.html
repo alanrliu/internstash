@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>InternStash</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💼</text></svg>">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="actions">
+    <button id="btn-new" class="primary">+ New</button>
+    <button id="btn-fetch" class="ghost" title="Import matching postings from the public feed now">Fetch feed</button>
+    <!-- One toggle per collapsible board column (currently: rejected), built in
+         init() from /api/meta. Shows/hides the column without a refetch. -->
+    <div id="status-toggles" class="status-toggles"></div>
+  </div>
+
+  <div class="search-wrap">
+    <input id="search" type="search" placeholder="Search company, role, or job description…" autocomplete="off">
+    <button id="search-clear" class="ghost" title="Clear search" hidden>&times;</button>
+  </div>
+
+  <div class="brand">
+    <span class="logo">💼</span>
+    <h1>InternStash</h1>
+  </div>
+
+  <button id="btn-filters" class="ghost filters-trigger" aria-expanded="false" aria-controls="filter-panel"
+          title="Filter by tag and term">
+    <span class="bars">☰</span> Filters<span id="filter-count" class="badge" hidden></span>
+  </button>
+</header>
+
+<!-- Slide-in filter drawer. Closed by default; opened from the Filters button. -->
+<div id="panel-backdrop" class="panel-backdrop"></div>
+
+<aside id="filter-panel" class="side-panel" aria-label="Filters" aria-hidden="true">
+  <div class="panel-head">
+    <h2>Filters</h2>
+    <button id="panel-close" class="ghost" title="Close (Esc)">&times;</button>
+  </div>
+
+  <div class="panel-body">
+    <label class="archive-toggle">
+      <input type="checkbox" id="show-archived">
+      <span>Show archived <span class="hint">not interested</span></span>
+    </label>
+
+    <div class="panel-section">Term</div>
+    <div id="season-list" class="tag-list"></div>
+
+    <div class="panel-section">Tags</div>
+    <div id="tag-list" class="tag-list"></div>
+  </div>
+
+  <div class="panel-foot">
+    <button id="filter-clear" class="ghost small" hidden>Clear all filters</button>
+  </div>
+</aside>
+
+<main id="board" class="board" aria-live="polite"></main>
+
+<!-- Transient confirmations. Bottom-right, auto-dismissing. -->
+<div id="toasts" class="toasts" aria-live="polite" aria-atomic="false"></div>
+
+<!-- ------------------------------------------------------------------ -->
+<!-- Entry modal: doubles as create and edit                              -->
+<!-- ------------------------------------------------------------------ -->
+<div id="modal" class="modal-backdrop" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal-head">
+      <h2 id="modal-title">New application</h2>
+      <button id="modal-close" class="ghost" title="Close">&times;</button>
+    </div>
+
+    <form id="entry-form" class="modal-body">
+      <input type="hidden" id="f-id">
+
+      <!-- Step 1: paste. Everything below fills itself in from this. -->
+      <div class="jd-block">
+        <div class="jd-label">
+          <label for="f-jd">Job description <span class="step">paste here first</span></label>
+          <button type="button" id="btn-autofill" class="ghost small" hidden>✨ Autofill fields</button>
+        </div>
+        <div id="f-jd" class="jd-editor" contenteditable="true" spellcheck="false"
+             data-placeholder="Paste the job posting here — company, role, deadline and tags fill in automatically…"></div>
+        <div id="autofill-status" class="autofill-status" hidden></div>
+      </div>
+
+      <hr class="divider">
+
+      <div class="grid-2">
+        <label>Company
+          <input id="f-company" required maxlength="200" placeholder="Acme Health">
+        </label>
+        <label>Role title
+          <input id="f-role" required maxlength="300" placeholder="ML Engineering Intern, Summer 2027">
+        </label>
+      </div>
+
+      <div class="grid-2">
+        <label>Status
+          <div id="f-status" class="status-buttons" role="group" aria-label="Status"></div>
+        </label>
+        <label>Term <span class="hint">e.g. Summer 2027</span>
+          <input id="f-season" placeholder="Summer 2027" list="season-options">
+          <datalist id="season-options"></datalist>
+        </label>
+      </div>
+
+      <div class="grid-2">
+        <label>Source URL
+          <div class="url-row">
+            <input id="f-url" type="url" placeholder="https://…">
+            <button type="button" id="btn-open-url" class="today-btn" title="Open the posting in a new tab" disabled>↗ Open</button>
+          </div>
+        </label>
+      </div>
+
+      <div class="grid-3">
+        <label>Found
+          <div class="date-row">
+            <input id="f-found" type="date">
+            <button type="button" class="today-btn" data-target="f-found" title="Set to today">Today</button>
+          </div>
+        </label>
+        <label>Applied
+          <div class="date-row">
+            <input id="f-applied" type="date">
+            <button type="button" class="today-btn" data-target="f-applied" title="Set to today">Today</button>
+          </div>
+        </label>
+        <label>Deadline
+          <div class="date-row">
+            <input id="f-deadline" type="date">
+            <button type="button" class="today-btn" data-target="f-deadline" title="Set to today">Today</button>
+          </div>
+        </label>
+      </div>
+
+      <label>Tags <span class="hint">comma-separated</span>
+        <input id="f-tags" placeholder="health-tech, MLE, SWE">
+      </label>
+
+      <label>Notes <span class="hint">yours — never autofilled</span>
+        <textarea id="f-notes" rows="4" placeholder="Referral contact, interview prep, salary info…"></textarea>
+      </label>
+
+      <div class="modal-foot">
+        <button type="button" id="btn-delete" class="danger" hidden>Delete</button>
+        <div class="spacer"></div>
+        <button type="button" id="btn-cancel" class="ghost">Cancel</button>
+        <button type="submit" id="btn-save" class="primary">Save</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="/static/app.js"></script>
+</body>
+</html>

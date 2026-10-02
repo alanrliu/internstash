@@ -1,0 +1,679 @@
+/* InternStash — plain CSS, no framework. */
+
+:root {
+  --bg: #0f1115;
+  --surface: #171a21;
+  --surface-2: #1e222b;
+  --border: #2a2f3a;
+  --text: #e6e8ec;
+  --text-dim: #9aa3b2;
+  --accent: #5b8cff;
+  --danger: #ef4b5b;
+  --radius: 10px;
+
+  --s-suggested: #a78bfa;
+  --s-applied: #38bdf8;
+  --s-oa: #fbbf24;
+  --s-interviewing: #fb923c;
+  --s-offer: #34d399;
+  --s-rejected: #f87171;
+  --s-not_interested: #64748b;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg: #f5f6f8;
+    --surface: #ffffff;
+    --surface-2: #f0f2f5;
+    --border: #dde1e7;
+    --text: #14161a;
+    --text-dim: #5f6875;
+  }
+}
+
+* { box-sizing: border-box; }
+
+/* The `hidden` attribute must beat every display rule in this file.
+ *
+ * Author styles override the UA stylesheet's `[hidden] { display: none }`, so a
+ * later rule like `.modal-backdrop { display: flex }` silently re-shows an
+ * element that JS just hid — and a fixed, full-viewport backdrop then eats every
+ * click on the page. Anything toggled via `hidden` in app.js depends on this. */
+[hidden] { display: none !important; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 15px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+/* ---------------- Top bar ---------------- */
+
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 20px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  flex-wrap: wrap;
+}
+
+.brand { display: flex; align-items: center; gap: 8px; }
+.brand h1 { font-size: 17px; margin: 0; letter-spacing: -0.01em; }
+.logo { font-size: 20px; }
+
+.search-wrap { flex: 1; min-width: 220px; position: relative; display: flex; }
+.search-wrap input {
+  width: 100%;
+  padding: 9px 32px 9px 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 14px;
+}
+.search-wrap input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+#search-clear { position: absolute; right: 4px; top: 50%; transform: translateY(-50%); }
+
+.actions { display: flex; gap: 8px; align-items: center; }
+
+/* ---------------- Collapsible-column toggles ----------------
+ * Sits with the topbar actions, coloured by its status so it reads as "that
+ * column" rather than a generic button. Lit when the column is on the board,
+ * dimmed and outline-only when it is folded away; the count keeps working
+ * either way, so a hidden column still tells you how much is in it. */
+
+.status-toggles { display: flex; gap: 8px; }
+
+.status-toggle {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  background: transparent;
+  border: 1px solid color-mix(in srgb, var(--s-color) 45%, transparent);
+  color: var(--s-color);
+  opacity: .62;
+}
+.status-toggle .dot { background: var(--s-color); opacity: .5; }
+.status-toggle .count {
+  margin-left: 0;
+  color: inherit;
+  background: color-mix(in srgb, var(--s-color) 14%, transparent);
+}
+.status-toggle.on {
+  opacity: 1;
+  border-color: var(--s-color);
+  background: color-mix(in srgb, var(--s-color) 15%, transparent);
+}
+.status-toggle.on .dot { opacity: 1; }
+.status-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ---------------- Buttons ---------------- */
+
+button {
+  font: inherit;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  padding: 8px 14px;
+  cursor: pointer;
+  transition: filter .15s, background .15s;
+}
+button:hover { filter: brightness(1.12); }
+button:active { transform: translateY(1px); }
+
+.primary { background: var(--accent); color: #fff; font-weight: 600; }
+/* A disabled Save must look unavailable, or people keep clicking it. */
+button:disabled { opacity: .55; cursor: not-allowed; filter: none; }
+button:disabled:hover { filter: none; }
+.ghost { background: transparent; border-color: var(--border); color: var(--text-dim); }
+.ghost:hover { color: var(--text); }
+.danger { background: transparent; border-color: var(--danger); color: var(--danger); }
+.danger:hover { background: var(--danger); color: #fff; }
+
+/* ---------------- Toasts (bottom-right, self-dismissing) ---------------- */
+
+.toasts {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-end;
+  pointer-events: none;
+}
+
+.toast {
+  pointer-events: auto;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--s-offer);
+  border-radius: 9px;
+  padding: 9px 13px;
+  font-size: 13px;
+  color: var(--text);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .3);
+  max-width: 340px;
+  animation: toast-in .18s ease-out;
+}
+.toast.error { border-left-color: var(--danger); color: var(--danger); }
+.toast.leaving { animation: toast-out .25s ease-in forwards; }
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes toast-out {
+  from { opacity: 1; transform: none; }
+  to   { opacity: 0; transform: translateY(6px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast, .toast.leaving { animation: none; }
+}
+
+/* ---------------- Filter drawer (slides in from the left) ---------------- */
+
+.filters-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex: none;
+  white-space: nowrap;
+}
+.filters-trigger .bars { font-size: 14px; line-height: 1; }
+.filters-trigger .badge {
+  background: var(--accent);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 20px;
+  padding: 1px 7px;
+  margin-left: 1px;
+}
+/* Stays visibly "on" while the drawer is shut, so active filters aren't
+   invisible just because the panel is hidden. */
+.filters-trigger.has-filters { border-color: var(--accent); color: var(--accent); }
+
+.panel-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, .4);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .2s ease;
+  z-index: 55;
+}
+.panel-backdrop.open { opacity: 1; pointer-events: auto; }
+
+.side-panel {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: min(340px, 86vw);
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  box-shadow: 6px 0 28px rgba(0, 0, 0, .32);
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  transform: translateX(-100%);
+  visibility: hidden;
+  /* Delay the visibility flip until the slide-out finishes, so the closed
+     panel can never swallow clicks meant for the board. */
+  transition: transform .22s ease, visibility 0s linear .22s;
+}
+.side-panel.open {
+  transform: none;
+  visibility: visible;
+  transition: transform .22s ease, visibility 0s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .side-panel, .panel-backdrop { transition: none; }
+}
+
+.panel-head {
+  display: flex;
+  align-items: center;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.panel-head h2 { margin: 0; font-size: 15px; }
+.panel-head .ghost { margin-left: auto; font-size: 20px; line-height: 1; padding: 2px 10px; }
+
+.panel-body {
+  padding: 14px 16px;
+  overflow-y: auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.panel-section {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--text-dim);
+  padding-top: 4px;
+  border-top: 1px solid var(--border);
+}
+
+.panel-foot {
+  padding: 12px 16px;
+  border-top: 1px solid var(--border);
+}
+.panel-foot .small { width: 100%; padding: 7px; font-size: 12.5px; }
+
+.tag-list {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tag-check {
+  display: inline-flex;
+  /* Required: the global `label` rule sets flex-direction: column, which would
+     otherwise stack the checkbox, name and count on separate lines. */
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  padding: 4px 9px 4px 7px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: var(--surface-2);
+  color: var(--text-dim);
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+  line-height: 1.4;
+}
+.tag-check:hover { border-color: var(--accent); color: var(--text); }
+.tag-check input { width: auto; margin: 0; accent-color: var(--accent); flex: none; }
+.tag-check.on { border-color: var(--accent); color: var(--accent); background: var(--surface); }
+.tag-check .n { opacity: .55; font-size: 11px; }
+/* Areas are what you browse by; skills are supporting detail. */
+.tag-check.area { font-weight: 600; color: var(--text); }
+.tag-check.area.on { color: var(--accent); }
+
+/* Full-width so it forces a line break in the wrapping list. */
+.tag-sep {
+  flex: 0 0 100%;
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--text-dim);
+  opacity: .7;
+  margin-top: 6px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+
+.archive-toggle {
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 9px;
+  font-size: 13px;
+  cursor: pointer;
+  color: var(--text);
+  font-weight: 500;
+  padding: 2px 0;
+}
+.archive-toggle input { width: auto; margin: 2px 0 0; accent-color: var(--accent); flex: none; }
+.archive-toggle .hint { display: block; }
+
+/* ---------------- Kanban board ---------------- */
+
+.board {
+  display: flex;
+  gap: 14px;
+  padding: 18px 20px 40px;
+  overflow-x: auto;
+  align-items: flex-start;
+  min-height: calc(100vh - 120px);
+}
+
+.column {
+  /* Grow to share the width when only the active columns are showing, so the
+     board fills the screen instead of hugging the left edge. Falls back to
+     horizontal scrolling once the archived columns are revealed. */
+  flex: 1 1 270px;
+  min-width: 240px;
+  max-width: 420px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 130px);
+}
+
+.col-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 13px;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  background: var(--surface);
+  border-radius: 12px 12px 0 0;
+}
+.dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+.col-head h3 { margin: 0; font-size: 13px; text-transform: capitalize; font-weight: 650; }
+.count {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--text-dim);
+  background: var(--surface-2);
+  padding: 1px 8px;
+  border-radius: 20px;
+}
+
+/* Rejected is on the board on purpose, but it is a record, not a queue — it
+   takes a narrower share so the four columns you act on stay dominant. */
+.column.secondary { flex: 0 1 230px; min-width: 200px; }
+
+.col-body { padding: 10px; display: flex; flex-direction: column; gap: 9px; overflow-y: auto; }
+
+.card {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--border);
+  border-radius: 9px;
+  padding: 10px 11px;
+  cursor: pointer;
+  transition: border-color .15s, transform .1s;
+}
+.card:hover { border-color: var(--accent); transform: translateY(-1px); }
+.card .company { font-weight: 650; font-size: 14px; }
+.card .role { color: var(--text-dim); font-size: 13px; margin-top: 2px; }
+
+.card-meta { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; align-items: center; }
+
+.deadline {
+  font-size: 11.5px;
+  padding: 2px 7px;
+  border-radius: 20px;
+  background: var(--bg);
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+}
+.deadline.soon { color: var(--s-oa); border-color: var(--s-oa); }
+.deadline.past { color: var(--danger); border-color: var(--danger); }
+/* Once you've applied, the deadline is history — keep the date for reference
+   but drop the urgency colouring so it stops competing for attention. */
+.deadline.muted { opacity: .5; }
+
+.tag {
+  font-size: 11px;
+  padding: 2px 7px;
+  border-radius: 20px;
+  background: var(--bg);
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+}
+
+/* Term chip: a scale, not a topic — styled apart from the tag pills. */
+.season-chip {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--s-suggested) 16%, transparent);
+  color: var(--s-suggested);
+  border: 1px solid color-mix(in srgb, var(--s-suggested) 40%, transparent);
+}
+
+/* Season filter rows echo the chip so the two read as the same axis. */
+.tag-check.season { font-weight: 600; }
+.tag-check.season.on { border-color: var(--s-suggested); color: var(--s-suggested); }
+.tag-check.season.unstated { font-weight: 400; font-style: italic; opacity: .8; }
+
+.empty { color: var(--text-dim); font-size: 13px; text-align: center; padding: 14px 6px; }
+
+/* ---------------- Modal ---------------- */
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, .55);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 40px 16px;
+  overflow-y: auto;
+  z-index: 50;
+}
+
+.modal {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  width: min(760px, 100%);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, .45);
+}
+
+.modal-head {
+  display: flex;
+  align-items: center;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+}
+.modal-head h2 { margin: 0; font-size: 16px; }
+.modal-head .ghost { margin-left: auto; font-size: 20px; line-height: 1; padding: 2px 10px; }
+
+.modal-body { padding: 18px; display: flex; flex-direction: column; gap: 13px; }
+
+label { display: flex; flex-direction: column; gap: 5px; font-size: 13px; color: var(--text-dim); font-weight: 550; }
+.hint { font-weight: 400; font-size: 12px; color: var(--text-dim); }
+
+input, select, textarea {
+  font: inherit;
+  padding: 8px 10px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  width: 100%;
+}
+input:focus, select:focus, textarea:focus, .jd-editor:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+}
+textarea { resize: vertical; }
+
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 13px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 13px; }
+@media (max-width: 620px) {
+  .grid-2, .grid-3 { grid-template-columns: 1fr; }
+}
+
+/* Rich-paste job description box */
+.jd-editor {
+  min-height: 150px;
+  max-height: 380px;
+  overflow-y: auto;
+  padding: 11px 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+  color: var(--text);
+}
+.jd-editor:empty::before {
+  content: attr(data-placeholder);
+  color: var(--text-dim);
+}
+.jd-editor a { color: var(--accent); }
+.jd-editor img { max-width: 100%; }
+.jd-editor table { border-collapse: collapse; width: 100%; }
+.jd-editor td, .jd-editor th { border: 1px solid var(--border); padding: 4px 7px; }
+.jd-editor pre { overflow-x: auto; background: var(--bg); padding: 8px; border-radius: 6px; }
+.jd-editor.busy { opacity: .6; }
+
+.modal-foot { display: flex; gap: 9px; align-items: center; padding-top: 4px; }
+.spacer { flex: 1; }
+
+/* ---------------- Paste-first block ---------------- */
+
+.jd-block { display: flex; flex-direction: column; gap: 6px; }
+
+.jd-label { display: flex; align-items: center; gap: 10px; }
+.jd-label label { flex-direction: row; align-items: center; gap: 7px; }
+.step {
+  font-weight: 500;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  border-radius: 20px;
+  padding: 1px 8px;
+}
+.jd-label .small { margin-left: auto; padding: 4px 10px; font-size: 12.5px; }
+
+.divider { border: none; border-top: 1px solid var(--border); margin: 3px 0 0; }
+
+.autofill-status { font-size: 12.5px; color: var(--text-dim); min-height: 17px; }
+.autofill-status.working { color: var(--accent); }
+.autofill-status.failed { color: var(--text-dim); font-style: italic; }
+
+/* Briefly highlight fields the model filled, so they get a second look. */
+@keyframes flash-fill {
+  from { background: color-mix(in srgb, var(--accent) 26%, var(--surface-2)); }
+  to   { background: var(--surface-2); }
+}
+.autofilled { animation: flash-fill 1.5s ease-out; }
+
+/* ---------------- Date + Today button ---------------- */
+
+.date-row, .url-row { display: flex; gap: 5px; align-items: stretch; }
+.date-row input, .url-row input { flex: 1; min-width: 0; }
+
+.today-btn {
+  flex: none;
+  padding: 0 9px;
+  font-size: 12px;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  border-radius: 8px;
+  cursor: pointer;
+}
+.today-btn:hover:not(:disabled) { color: var(--accent); border-color: var(--accent); }
+.today-btn.is-today { color: var(--accent); border-color: var(--accent); }
+
+/* ---------------- Status button group ---------------- */
+
+.status-buttons { display: flex; flex-wrap: wrap; gap: 6px; }
+.status-btn {
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 6px 11px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  color: var(--text-dim);
+  cursor: pointer;
+}
+.status-btn:hover { color: var(--text); border-color: var(--s-color, var(--accent)); }
+.status-btn.active {
+  color: var(--s-color, var(--accent));
+  border-color: var(--s-color, var(--accent));
+  background: color-mix(in srgb, var(--s-color, var(--accent)) 16%, transparent);
+}
+.today-btn:disabled { opacity: .4; cursor: not-allowed; }
+
+/* ---------------- Mobile (iPhone-width phones) ----------------
+ * Scoped to a single max-width block so nothing above this line — i.e. the
+ * desktop/tablet experience — is affected. 480px comfortably covers the
+ * whole iPhone 17 lineup (390–440 CSS px) in portrait with headroom. */
+@media (max-width: 480px) {
+  /* iOS Safari zooms the page in on focus for any input under 16px — this is
+     the #1 "feels broken" mobile bug, so every form control gets bumped up. */
+  input, select, textarea, .jd-editor { font-size: 16px; }
+
+  body { padding-top: env(safe-area-inset-top); }
+
+  .topbar {
+    padding: 10px 12px;
+    gap: 8px;
+  }
+  /* Reflow into three predictable rows instead of an arbitrary wrap:
+     brand, then search, then actions + filters. */
+  .brand { order: 1; flex: 1 0 100%; justify-content: center; }
+  .search-wrap { order: 2; flex: 1 0 100%; min-width: 0; }
+  .actions { order: 3; flex: 1; flex-wrap: wrap; }
+  .filters-trigger { order: 4; }
+  .search-wrap input { font-size: 16px; padding: 10px 32px 10px 12px; }
+
+  .side-panel { padding-bottom: env(safe-area-inset-bottom); }
+
+  /* One column at a time with a peek of the next, swipeable via scroll-snap,
+     instead of squeezing every status column down to its 240px floor. */
+  .board {
+    padding: 12px 12px 20px;
+    gap: 10px;
+    scroll-snap-type: x mandatory;
+    min-height: calc(100vh - 165px);
+  }
+  .column, .column.secondary {
+    flex: 0 0 88vw;
+    max-width: 88vw;
+    min-width: 0;
+    max-height: calc(100vh - 175px);
+    scroll-snap-align: start;
+  }
+
+  /* The toggles wrap onto the actions row; keep them from crowding it out. */
+  .status-toggle { padding: 8px 10px; }
+
+  /* Full-screen sheet instead of a floating card with 40px of dead margin. */
+  .modal-backdrop { padding: 0; align-items: stretch; }
+  .modal {
+    width: 100%;
+    min-height: 100%;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .modal-body { padding: 14px; }
+
+  /* Bigger tap targets for the small icon-only close buttons. */
+  .modal-head .ghost, .panel-head .ghost { padding: 8px 14px; }
+
+  .toasts { right: 12px; bottom: max(12px, env(safe-area-inset-bottom)); }
+}
+
+/* Refused close: a short shake draws attention back to the dialog without
+   stealing focus or requiring a click to dismiss. */
+@keyframes modal-nudge {
+  0%, 100% { transform: translateX(0); }
+  20%      { transform: translateX(-7px); }
+  40%      { transform: translateX(7px); }
+  60%      { transform: translateX(-4px); }
+  80%      { transform: translateX(4px); }
+}
+.modal.nudge {
+  animation: modal-nudge .32s ease-in-out;
+  border-color: var(--accent);
+}
+@media (prefers-reduced-motion: reduce) {
+  .modal.nudge { animation: none; }
+}

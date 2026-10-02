@@ -1,0 +1,41 @@
+# ---------------------------------------------------------------------------
+# Personal data. NEVER commit.
+#
+# Everything the app writes at runtime (SQLite DB, pasted job descriptions,
+# logs) lives under data/. That folder is yours and stays local.
+#
+# NOTE: this must be `data/*` with negations, not a bare `data/`. Git does not
+# descend into an excluded directory, so `data/` would make the `!` re-includes
+# below unreachable and the folder would vanish for fresh clones.
+# ---------------------------------------------------------------------------
+data/*
+!data/.gitkeep
+!data/README.md
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# SQLite strays, in case anyone ever points the DB outside data/ by mistake
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Editors & OS
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db

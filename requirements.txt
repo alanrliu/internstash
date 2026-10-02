@@ -1,0 +1,14 @@
+# InternStash dependencies — deliberately minimal.
+#
+# SQLite comes from the Python stdlib. The frontend is vanilla HTML/CSS/JS
+# with no build step. HTTP calls to the internship feed use urllib (stdlib).
+
+fastapi>=0.115           # web framework (pulls in pydantic + starlette)
+uvicorn[standard]>=0.30  # ASGI server — required to actually run FastAPI
+
+# HTML sanitizer for pasted job descriptions.
+# Rust ammonia/html5ever binding. Chosen over a hand-rolled html.parser
+# allowlist because html.parser is a tokenizer while browsers use the HTML5
+# tree-construction algorithm; that mismatch is the root of mutation-XSS
+# bypasses. See app/sanitize.py.
+nh3>=0.2.18
